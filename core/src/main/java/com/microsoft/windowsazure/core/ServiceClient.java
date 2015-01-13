@@ -17,10 +17,10 @@
  */
 package com.microsoft.windowsazure.core;
 
+import com.microsoft.windowsazure.core.pipeline.apache.*;
 import com.microsoft.windowsazure.core.pipeline.filter.ServiceRequestFilter;
-import com.microsoft.windowsazure.core.pipeline.apache.HttpRequestInterceptorAdapter;
 import com.microsoft.windowsazure.core.pipeline.filter.ServiceResponseFilter;
-import com.microsoft.windowsazure.core.pipeline.apache.HttpResponseInterceptorAdapter;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -57,6 +57,10 @@ public abstract class ServiceClient<TClient> implements
     }
 
     private final HttpClientBuilder httpClientBuilder;
+    private HttpRequestInterceptorFirstAdapter requestInterceptorAdapterFirst;
+    private HttpRequestInterceptorLastAdapter requestInterceptorAdapterLast;
+    private HttpResponseInterceptorFirstAdapter responseInterceptorAdapterFirst;
+    private HttpResponseInterceptorLastAdapter responseInterceptorAdapterLast;
 
     protected ServiceClient(HttpClientBuilder httpClientBuilder,
             ExecutorService executorService) {
@@ -71,35 +75,48 @@ public abstract class ServiceClient<TClient> implements
     @Override
     public TClient withRequestFilterFirst(
             ServiceRequestFilter serviceRequestFilter) {
-        httpClientBuilder
-                .addInterceptorFirst(new HttpRequestInterceptorAdapter(
-                        serviceRequestFilter));
+        if(requestInterceptorAdapterFirst == null) {
+            requestInterceptorAdapterFirst = new HttpRequestInterceptorFirstAdapter();
+            httpClientBuilder.addInterceptorFirst(requestInterceptorAdapterFirst);
+        }
+
+        requestInterceptorAdapterFirst.add(serviceRequestFilter);
         return this.newInstance(httpClientBuilder, executorService);
     }
 
     @Override
     public TClient withRequestFilterLast(
             ServiceRequestFilter serviceRequestFilter) {
-        httpClientBuilder.addInterceptorLast(new HttpRequestInterceptorAdapter(
-                serviceRequestFilter));
+        if(requestInterceptorAdapterLast == null) {
+            requestInterceptorAdapterLast = new HttpRequestInterceptorLastAdapter();
+            httpClientBuilder.addInterceptorLast(requestInterceptorAdapterLast);
+        }
+
+        requestInterceptorAdapterLast.add(serviceRequestFilter);
         return this.newInstance(httpClientBuilder, executorService);
     }
 
     @Override
     public TClient withResponseFilterFirst(
             ServiceResponseFilter serviceResponseFilter) {
-        httpClientBuilder
-                .addInterceptorFirst(new HttpResponseInterceptorAdapter(
-                        serviceResponseFilter));
+        if(responseInterceptorAdapterFirst == null) {
+            responseInterceptorAdapterFirst = new HttpResponseInterceptorFirstAdapter();
+            httpClientBuilder.addInterceptorFirst(responseInterceptorAdapterFirst);
+        }
+
+        responseInterceptorAdapterFirst.add(serviceResponseFilter);
         return this.newInstance(httpClientBuilder, executorService);
     }
 
     @Override
     public TClient withResponseFilterLast(
             ServiceResponseFilter serviceResponseFilter) {
-        httpClientBuilder
-                .addInterceptorLast(new HttpResponseInterceptorAdapter(
-                        serviceResponseFilter));
+        if(responseInterceptorAdapterLast == null) {
+            responseInterceptorAdapterLast = new HttpResponseInterceptorLastAdapter();
+            httpClientBuilder.addInterceptorLast(responseInterceptorAdapterLast);
+        }
+
+        responseInterceptorAdapterLast.add(serviceResponseFilter);
         return this.newInstance(httpClientBuilder, executorService);
     }
 
